@@ -29,7 +29,8 @@ public with sharing class MaintenanceRequestHelper {
       GROUP BY Maintenance_Request__c
     ]) {
       mapOldCaseIdToNewCase.get((Id) aggr.get('Maintenance_Request__c'))
-        .Date_Due__c = Date.today().addDays((Integer) aggr.get('min_cycle'));
+        .Date_Due__c = Date.today()
+        .addDays(((Decimal) aggr.get('min_cycle')).intValue());
     }
 
     if (mapOldCaseIdToNewCase.size() > 0)
