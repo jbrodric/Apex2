@@ -12,7 +12,7 @@ public with sharing class MaintenanceRequestHelper {
           c.Id,
           new Case(
             Type = 'Routine Maintenance',
-            Subject = 'Routine Maintenance for ' + c.Vehicle__r.Name,
+            Subject = 'Routine Maintenance',
             Vehicle__c = c.Vehicle__c,
             Date_Reported__c = Date.today()
           )
