@@ -12,7 +12,7 @@ public with sharing class MaintenanceRequestHelper {
           c.Id,
           new Case(
             Type = 'Routine Maintenance',
-            Subject = 'Routine Maintenance',
+            Subject = 'Routine Maintenance for ' + c.Vehicle__r.Name,
             Vehicle__c = c.Vehicle__c,
             Date_Reported__c = Date.today()
           )
@@ -20,20 +20,36 @@ public with sharing class MaintenanceRequestHelper {
       }
     }
 
+    for (AggregateResult aggr : [
+      SELECT
+        Maintenance_Request__c,
+        MIN(Equipment__r.Maintenance_Cycle__c) min_cycle
+      FROM Equipment_Maintenance_Item__c
+      WHERE Maintenance_Request__c IN :mapOldCaseIdToNewCase.keySet()
+      GROUP BY Maintenance_Request__c
+    ]) {
+      mapOldCaseIdToNewCase.get((Id) aggr.get('Maintenance_Request__c'))
+        .Date_Due__c = Date.today().addDays((Integer) aggr.get('min_cycle'));
+    }
+
     if (mapOldCaseIdToNewCase.size() > 0)
       insert mapOldCaseIdToNewCase.values();
 
     for (Equipment_Maintenance_Item__c emi : [
-      SELECT
-        Id,
-        Maintenance_Request__c,
-        Maintenance_Request__r.Type,
-        Maintenance_Request__r.Vehicle__c,
-        Equipment__c
+      SELECT Id, Maintenance_Request__c, Equipment__c, Quantity__c
       FROM Equipment_Maintenance_Item__c
       WHERE Maintenance_Request__c IN :mapOldCaseIdToNewCase.keySet()
     ]) {
-      lstEMIInsert.add(new Equipment_Maintenance_Item__c());
+      lstEMIInsert.add(
+        new Equipment_Maintenance_Item__c(
+          Equipment__c = emi.Equipment__c,
+          Maintenance_Request__c = mapOldCaseIdToNewCase.get(
+              emi.Maintenance_Request__c
+            )
+            .Id,
+          Quantity__c = emi.Quantity__c
+        )
+      );
     }
 
     if (lstEMIInsert.size() > 0)
